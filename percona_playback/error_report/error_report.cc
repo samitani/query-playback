@@ -34,6 +34,7 @@ private:
   tbb::atomic<uint64_t> total_execution_time_ms;
   tbb::atomic<uint64_t> expected_total_execution_time_ms;
   tbb::atomic<uint64_t> nr_quicker_queries;
+  tbb::atomic<uint64_t> slow_threshold_ms;
   std::string  full_report;
 
 public:
@@ -42,6 +43,7 @@ public:
     total_execution_time_ms= 0;
     expected_total_execution_time_ms= 0;
     nr_quicker_queries= 0;
+    slow_threshold_ms = 0;
     full_report = "";
   }
 
@@ -57,9 +59,9 @@ public:
     if (expected.getDuration().total_microseconds())
     {
       expected_total_execution_time_ms.fetch_and_add(expected.getDuration().total_microseconds());
-      if (actual.getDuration().total_microseconds() > expected.getDuration().total_microseconds())
+      if (actual.getDuration().total_microseconds() > expected.getDuration().total_microseconds() + slow_threshold_ms)
       {
-        printf(_("thread %" PRIu64 " slower query was run in  %" PRIu64 " microseconds instead of %" PRIu64  "\n  <--\n%s  -->\n"), 
+        printf(_("thread %" PRIu64 " slower query was run in  %" PRIu64 " microseconds instead of %" PRIu64  "\n  <--\n%s  -->\n"),
 		uint64_t(thread_id),
 		uint64_t(actual.getDuration().total_microseconds()),
                 uint64_t(expected.getDuration().total_microseconds()),
@@ -67,6 +69,17 @@ public:
       }
     }
   }
+
+  virtual int processOptions(boost::program_options::variables_map &vm) {
+    if (active && vm.count("slow-threshold-microseconds"))
+    {
+        slow_threshold_ms = vm["slow-threshold-microseconds"].as<unsigned int>();
+	    return 0;
+    }
+
+    return 0;
+  }
+
 
  virtual void print_report()
  {

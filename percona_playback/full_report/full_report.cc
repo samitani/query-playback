@@ -51,6 +51,7 @@ private:
   tbb::atomic<uint64_t> nr_drop_slower;
   tbb::atomic<uint64_t> total_execution_time_ms;
   tbb::atomic<uint64_t> expected_total_execution_time_ms;
+  tbb::atomic<uint64_t> slow_threshold_ms;
 
   bool show_connection_query_count;
 
@@ -77,6 +78,7 @@ public:
     nr_drop_slower= 0;
     total_execution_time_ms= 0;
     expected_total_execution_time_ms= 0;
+    slow_threshold_ms = 0;
   }
 
 
@@ -96,7 +98,7 @@ public:
     if (expected.getDuration().total_microseconds())
     {
       expected_total_execution_time_ms.fetch_and_add(expected.getDuration().total_microseconds());
-      if (actual.getDuration().total_microseconds() < expected.getDuration().total_microseconds())
+      if (actual.getDuration().total_microseconds() < expected.getDuration().total_microseconds() + slow_threshold_ms)
       {
         faster= 1;
         slower= 0;
@@ -147,6 +149,16 @@ public:
 		nr_drop_slower+= slower;
     }
 
+  }
+
+  virtual int processOptions(boost::program_options::variables_map &vm) {
+    if (active && vm.count("slow-threshold-microseconds"))
+    {
+        slow_threshold_ms = vm["slow-threshold-microseconds"].as<unsigned int>();
+	    return 0;
+    }
+
+    return 0;
   }
 
   virtual void print_report()

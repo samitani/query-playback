@@ -199,6 +199,9 @@ int percona_playback_argv(percona_playback_st *the_percona_playback,
     ("session-init-query",
      po::value<std::string>(&g_session_init_query)->default_value(""),
      _("This query will be executed just after each connect to db"))
+    ("slow-threshold-microseconds",
+     po::value<unsigned int>(),
+     _("threshold to be considered slow in microseconds"))
     ;
 
   std::string basic_usage;
